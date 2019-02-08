@@ -8,7 +8,6 @@ If NOT, do these steps first (copy from `ethz/ouster_example)` fork for ease of 
 + Reboot or `systemctl daemon-reload`
 + Run the ros node and check if received messages have timestamps from your computer clock
   
-
 # OS-1 Example Code
 Sample code for connecting to and configuring the OS-1, reading and visualizing
 data, and interfacing with ROS.
