@@ -14,7 +14,7 @@ struct EIGEN_ALIGN16 PointOS1 {
     PCL_ADD_POINT4D;
     float intensity;
     /*float t;*/
-    int32_t time_offset_us
+    int32_t time_offset_us;
     uint16_t reflectivity;
     uint8_t ring;
     uint16_t noise;

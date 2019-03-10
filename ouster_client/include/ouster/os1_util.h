@@ -120,6 +120,7 @@ std::function<void(const uint8_t*, iterator_type& it)> batch_to_iter(
                   0.0f,
                   static_cast<float>(OS1::px_signal_photons(px_buf)),
                   /*static_cast<float>(ts - scan_ts),*/
+                  /*static_cast<int32_t>(ts - scan_ts),*/
                   td_us,
                   OS1::px_reflectivity(px_buf),
                   ipx,
