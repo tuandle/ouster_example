@@ -229,11 +229,10 @@ sensor_info parse_metadata(const std::string& meta) {
       throw std::runtime_error{errors.c_str()};
   }
 
-  sensor_info info = {"UNKNOWN", "UNKNOWN", {}, lidar_mode(0),
-                      {},        {},        {},        {}};
+  sensor_info info = {"UNKNOWN", "UNKNOWN", {}, lidar_mode(0), {}, {}, {}, {}};
   info.hostname = root["hostname"].asString();
   info.sn = root["prod_sn"].asString();
-  //info.timestamp = root["timestamp_mode"].asString();
+  // info.timestamp = root["timestamp_mode"].asString();
   info.fw_rev = version_of_string(root["build_rev"].asString());
 
   info.mode = lidar_mode_of_string(root["lidar_mode"].asString());
@@ -298,9 +297,24 @@ std::shared_ptr<client> init_client(const std::string& hostname,
   success &= res == "set_config_param";
 
   success &= do_tcp_cmd(
-      sock_fd, {"set_config_param", "timestamp_mode", "TIME_FROM_PTP_1588"},
+      sock_fd,
+      {"set_config_param", "timestamp_mode", "TIME_FROM_PPS_IN_SYNCED"}, res);
+  success &= res == "set_config_param";
+
+  /*success &= do_tcp_cmd(
+      sock_fd, {"set_config_param", "pps_out_mode", "OUTPUT_FROM_PTP_1588"},
       res);
   success &= res == "set_config_param";
+
+  success &= do_tcp_cmd(sock_fd, {"set_config_param", "pps_angle", "360"}, res);
+  success &= res == "set_config_param";
+
+  success &=
+      do_tcp_cmd(sock_fd, {"set_config_param", "pps_pulse_width", "10"}, res);
+  success &= res == "set_config_param";
+
+  success &= do_tcp_cmd(sock_fd, {"set_config_param", "pps_rate", "10"}, res);
+  success &= res == "set_config_param";*/
 
   success &= do_tcp_cmd(sock_fd, {"get_sensor_info"}, res);
   success &=
@@ -308,7 +322,8 @@ std::shared_ptr<client> init_client(const std::string& hostname,
 
   /*success &= do_tcp_cmd(sock_fd, {"get_config_txt"}, res);
   success &=
-      reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta, &errors);*/
+      reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta,
+  &errors);*/
 
   success &= do_tcp_cmd(sock_fd, {"get_beam_intrinsics"}, res);
   success &=

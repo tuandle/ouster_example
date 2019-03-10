@@ -28,10 +28,9 @@ bool validTimestamp(const ros::Time& msg_time) {
   const ros::Duration kMaxTimeOffset(1.0);
   const ros::Time now = ros::Time::now();
   if (msg_time < (now - kMaxTimeOffset)) {
-    ROS_WARN_STREAM_THROTTLE(
-        1, "OS1 clock is not in sync with NUC clock. Current NUC time "
-               << now << " OS1 message time: " << msg_time
-               << ". Reject this message.");
+    ROS_WARN_STREAM_THROTTLE(1, "Clocks are not synced. NUC time "
+                                    << now << " OS1 message time: " << msg_time
+                                    << ". Reject this message.");
     return false;
   }
   return true;
@@ -67,10 +66,12 @@ int main(int argc, char** argv) {
       xyz_lut, W, H, [&](uint64_t scan_ts) mutable {
         msg = ouster_ros::OS1::cloud_to_cloud_msg(
             cloud, std::chrono::nanoseconds{scan_ts}, "os1_lidar");
-        if (validTimestamp(msg.header.stamp)) {
+        /*if (validTimestamp(msg.header.stamp)) {
           lidar_pub.publish(msg);
           it = cloud.begin();
-        }
+        }*/
+        lidar_pub.publish(msg);
+        it = cloud.begin();
       });
 
   auto lidar_handler = [&](const PacketMsg& pm) mutable {
@@ -79,9 +80,10 @@ int main(int argc, char** argv) {
 
   auto imu_handler = [&](const PacketMsg& p) {
     sensor_msgs::Imu msg = ouster_ros::OS1::packet_to_imu_msg(p, "os1_imu");
-    if (validTimestamp(msg.header.stamp)) {
+    /*if (validTimestamp(msg.header.stamp)) {
       imu_pub.publish(msg);
-    }
+    }*/
+    imu_pub.publish(msg);
   };
 
   auto lidar_packet_sub = nh.subscribe<PacketMsg, const PacketMsg&>(
@@ -99,6 +101,5 @@ int main(int argc, char** argv) {
       cfg.response.lidar_to_sensor_transform, "os1_sensor", "os1_lidar"));
 
   ros::spin();
-
   return EXIT_SUCCESS;
 }

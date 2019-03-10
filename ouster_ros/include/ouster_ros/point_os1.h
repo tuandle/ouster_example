@@ -9,11 +9,12 @@
 
 namespace ouster_ros {
 namespace OS1 {
-
+// clang-format off
 struct EIGEN_ALIGN16 PointOS1 {
     PCL_ADD_POINT4D;
     float intensity;
-    float t;
+    /*float t;*/
+    int32_t time_offset_us
     uint16_t reflectivity;
     uint8_t ring;
     uint16_t noise;
@@ -23,13 +24,13 @@ struct EIGEN_ALIGN16 PointOS1 {
 }
 }
 
-// clang-format off
 POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::OS1::PointOS1,
     (float, x, x)
     (float, y, y)
     (float, z, z)
     (float, intensity, intensity)
-    (float, t, t)
+    /*(float, t, t)*/
+    (int32_t, time_offset_us, time_offset_us)
     (uint8_t, ring, ring)
     (uint16_t, reflectivity, reflectivity)
     (uint16_t, noise, noise)
