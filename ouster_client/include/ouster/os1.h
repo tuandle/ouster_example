@@ -63,6 +63,7 @@ inline bool operator<=(const version& u, const version& v) {
 struct sensor_info {
     std::string hostname;
     std::string sn;
+    //std::string timestamp;
     version fw_rev;
     lidar_mode mode;
     std::vector<double> beam_azimuth_angles;

@@ -78,56 +78,56 @@ std::vector<int> get_px_offset(int W);
 template <typename iterator_type, typename value_type, typename F>
 std::function<void(const uint8_t*, iterator_type& it)> batch_to_iter(
     const std::vector<double>& xyz_lut, int W, int H, F&& f) {
-    int next_m_id{W};
-    int64_t scan_ts{-1L};
+  int next_m_id{W};
+  int64_t scan_ts{-1L};
 
-    return [=](const uint8_t* packet_buf, iterator_type& it) mutable {
+  return [=](const uint8_t* packet_buf, iterator_type& it) mutable {
+    using T = value_type;
 
-        using T = value_type;
+    for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
+      const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
+      const uint16_t m_id = OS1::col_measurement_id(col_buf);
+      const uint64_t ts = OS1::col_timestamp(col_buf);
 
-        for (int icol = 0; icol < OS1::columns_per_buffer; icol++) {
-            const uint8_t* col_buf = OS1::nth_col(icol, packet_buf);
-            const uint16_t m_id = OS1::col_measurement_id(col_buf);
-            const uint64_t ts = OS1::col_timestamp(col_buf);
+      // drop invalid / out-of-bounds data in case of misconfiguration
+      if (OS1::col_valid(col_buf) != 0xffffffff || m_id >= W) continue;
 
-            // drop invalid / out-of-bounds data in case of misconfiguration
-            if (OS1::col_valid(col_buf) != 0xffffffff || m_id >= W) continue;
-
-            if (m_id < next_m_id) {
-                // if not initializing with first packet
-                if (scan_ts != -1) {
-                    // zero out remaining missing columns
-                    it = std::fill_n(it, H * (W - next_m_id), T{});
-                    f(scan_ts);
-                }
-
-                scan_ts = ts;
-                next_m_id = 0;
-            }
-
-            // fill zero out missing columns
-            it = std::fill_n(it, H * (m_id - next_m_id), T{});
-            next_m_id = m_id + 1;
-
-            for (uint8_t ipx = 0; ipx < H; ipx++) {
-                const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
-                uint32_t r = OS1::px_range(px_buf);
-                int ind = 3 * (m_id * H + ipx);
-
-                // x, y, z, (padding), i, ts, reflectivity, noise, range (mm)
-                *it++ = T{r * 0.001f * static_cast<float>(xyz_lut[ind + 0]),
-                          r * 0.001f * static_cast<float>(xyz_lut[ind + 1]),
-                          r * 0.001f * static_cast<float>(xyz_lut[ind + 2]),
-                          0.0f,
-                          static_cast<float>(OS1::px_signal_photons(px_buf)),
-                          static_cast<float>(ts - scan_ts),
-                          OS1::px_reflectivity(px_buf),
-                          ipx,
-                          OS1::px_noise_photons(px_buf),
-                          static_cast<uint32_t>(r)};
-            }
+      if (m_id < next_m_id) {
+        // if not initializing with first packet
+        if (scan_ts != -1) {
+          // zero out remaining missing columns
+          it = std::fill_n(it, H * (W - next_m_id), T{});
+          f(scan_ts);
         }
-    };
+
+        scan_ts = ts;
+        next_m_id = 0;
+      }
+
+      // fill zero out missing columns
+      it = std::fill_n(it, H * (m_id - next_m_id), T{});
+      next_m_id = m_id + 1;
+      int32_t td_us = static_cast<int32_t>((ts - scan_ts)/1000);
+      for (uint8_t ipx = 0; ipx < H; ipx++) {
+        const uint8_t* px_buf = OS1::nth_px(ipx, col_buf);
+        uint32_t r = OS1::px_range(px_buf);
+        int ind = 3 * (m_id * H + ipx);
+
+        // x, y, z, (padding), i, ts, reflectivity, noise, range (mm)
+        *it++ = T{r * 0.001f * static_cast<float>(xyz_lut[ind + 0]),
+                  r * 0.001f * static_cast<float>(xyz_lut[ind + 1]),
+                  r * 0.001f * static_cast<float>(xyz_lut[ind + 2]),
+                  0.0f,
+                  static_cast<float>(OS1::px_signal_photons(px_buf)),
+                  static_cast<float>(ts - scan_ts),
+                  /*td_us,*/
+                  OS1::px_reflectivity(px_buf),
+                  ipx,
+                  OS1::px_noise_photons(px_buf),
+                  static_cast<uint32_t>(r)};
+      }
+    }
+  };
 }
-}
-}
+}  // namespace OS1
+}  // namespace ouster

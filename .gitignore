@@ -5,3 +5,4 @@ devel/
 logs/
 install/
 doc/
+*.pdf
