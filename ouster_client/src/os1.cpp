@@ -49,52 +49,52 @@ const std::array<std::pair<lidar_mode, std::string>, 5> lidar_mode_strings = {
 int udp_data_socket(int port) {
   struct addrinfo hints, *info_start, *ai;
 
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET6;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = AI_PASSIVE;
+  memset(&hints, 0, sizeof hints);
+  hints.ai_family = AF_INET6;
+  hints.ai_socktype = SOCK_DGRAM;
+  hints.ai_flags = AI_PASSIVE;
 
-    auto port_s = std::to_string(port);
+  auto port_s = std::to_string(port);
 
-    int ret = getaddrinfo(NULL, port_s.c_str(), &hints, &info_start);
-    if (ret != 0) {
-        std::cerr << "getaddrinfo(): " << gai_strerror(ret) << std::endl;
-        return -1;
-    }
-    if (info_start == NULL) {
-        std::cerr << "getaddrinfo: empty result" << std::endl;
-        return -1;
-    }
+  int ret = getaddrinfo(NULL, port_s.c_str(), &hints, &info_start);
+  if (ret != 0) {
+    std::cerr << "getaddrinfo(): " << gai_strerror(ret) << std::endl;
+    return -1;
+  }
+  if (info_start == NULL) {
+    std::cerr << "getaddrinfo: empty result" << std::endl;
+    return -1;
+  }
 
-    int sock_fd;
-    for (ai = info_start; ai != NULL; ai = ai->ai_next) {
-        sock_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-        if (sock_fd < 0) {
-            std::cerr << "udp socket(): " << std::strerror(errno) << std::endl;
-            continue;
-        }
-
-        if (bind(sock_fd, ai->ai_addr, ai->ai_addrlen) < 0) {
-            close(sock_fd);
-            std::cerr << "udp bind(): " << std::strerror(errno) << std::endl;
-            continue;
-        }
-
-        break;
+  int sock_fd;
+  for (ai = info_start; ai != NULL; ai = ai->ai_next) {
+    sock_fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if (sock_fd < 0) {
+      std::cerr << "udp socket(): " << std::strerror(errno) << std::endl;
+      continue;
     }
 
-    freeaddrinfo(info_start);
-    if (ai == NULL) {
-        close(sock_fd);
-        return -1;
+    if (bind(sock_fd, ai->ai_addr, ai->ai_addrlen) < 0) {
+      close(sock_fd);
+      std::cerr << "udp bind(): " << std::strerror(errno) << std::endl;
+      continue;
     }
 
-    if (fcntl(sock_fd, F_SETFL, fcntl(sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-        std::cerr << "udp fcntl(): " << std::strerror(errno) << std::endl;
-        return -1;
-    }
+    break;
+  }
 
-    return sock_fd;
+  freeaddrinfo(info_start);
+  if (ai == NULL) {
+    close(sock_fd);
+    return -1;
+  }
+
+  if (fcntl(sock_fd, F_SETFL, fcntl(sock_fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+    std::cerr << "udp fcntl(): " << std::strerror(errno) << std::endl;
+    return -1;
+  }
+
+  return sock_fd;
 }
 
 int cfg_socket(const char* addr) {
@@ -251,11 +251,10 @@ sensor_info parse_metadata(const std::string& meta) {
       throw std::runtime_error{errors.c_str()};
   }
 
-  sensor_info info = {"UNKNOWN", "UNKNOWN", {}, lidar_mode(0),
-                      {},        {},        {},        {}};
+  sensor_info info = {"UNKNOWN", "UNKNOWN", {}, lidar_mode(0), {}, {}, {}, {}};
   info.hostname = root["hostname"].asString();
   info.sn = root["prod_sn"].asString();
-  //info.timestamp = root["timestamp_mode"].asString();
+  // info.timestamp = root["timestamp_mode"].asString();
   info.fw_rev = root["build_rev"].asString();
 
   info.mode = lidar_mode_of_string(root["lidar_mode"].asString());
@@ -324,13 +323,32 @@ std::shared_ptr<client> init_client(const std::string& hostname,
       res);
   success &= res == "set_config_param";
 
+  success &= do_tcp_cmd(sock_fd, {"set_config_param", "multipurpose_io_mode",
+                                  "OUTPUT_FROM_PTP_1588"},
+                        res);
+  success &= res == "set_config_param";
+
+  success &= do_tcp_cmd(
+      sock_fd, {"set_config_param", "sync_pulse_out_pulse_width", "1"}, res);
+  success &= res == "set_config_param";
+
+  success &= do_tcp_cmd(
+      sock_fd, {"set_config_param", "sync_pulse_out_frequency", "200"}, res);
+  success &= res == "set_config_param";
+
+  success &= do_tcp_cmd(
+      sock_fd, {"set_config_param", "sync_pulse_out_polarity", "ACTIVE_LOW"},
+      res);
+  success &= res == "set_config_param";
+
   success &= do_tcp_cmd(sock_fd, {"get_sensor_info"}, res);
   success &=
       reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta, &errors);
 
   /*success &= do_tcp_cmd(sock_fd, {"get_config_txt"}, res);
   success &=
-      reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta, &errors);*/
+      reader->parse(res.c_str(), res.c_str() + res.size(), &cli->meta,
+  &errors);*/
 
   success &= do_tcp_cmd(sock_fd, {"get_beam_intrinsics"}, res);
   success &=
