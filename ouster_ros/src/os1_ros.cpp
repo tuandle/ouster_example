@@ -43,8 +43,8 @@ sensor_msgs::Imu packet_to_imu_msg(const PacketMsg& p,
   m.linear_acceleration.z = imu_la_z(buf) * standard_g;*/
 
   // convert to ROS coordinate
-  m.linear_acceleration.x = imu_la_y(buf) * standard_g;
-  m.linear_acceleration.y = -imu_la_x(buf) * standard_g;
+  m.linear_acceleration.x = -imu_la_x(buf) * standard_g;
+  m.linear_acceleration.y = -imu_la_y(buf) * standard_g;
   m.linear_acceleration.z = -imu_la_z(buf) * standard_g;
 
   m.angular_velocity.x = imu_av_x(buf) * M_PI / 180.0;
