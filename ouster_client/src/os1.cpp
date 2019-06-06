@@ -329,11 +329,11 @@ std::shared_ptr<client> init_client(const std::string& hostname,
   success &= res == "set_config_param";
 
   success &= do_tcp_cmd(
-      sock_fd, {"set_config_param", "sync_pulse_out_pulse_width", "1"}, res);
+      sock_fd, {"set_config_param", "sync_pulse_out_pulse_width", "500"}, res);
   success &= res == "set_config_param";
 
   success &= do_tcp_cmd(
-      sock_fd, {"set_config_param", "sync_pulse_out_frequency", "200"}, res);
+      sock_fd, {"set_config_param", "sync_pulse_out_frequency", "1"}, res);
   success &= res == "set_config_param";
 
   success &= do_tcp_cmd(
