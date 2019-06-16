@@ -42,9 +42,12 @@ int main(int argc, char** argv) {
   ros::NodeHandle nh("~");
 
   auto tf_prefix = nh.param("tf_prefix", std::string{});
-  auto sensor_frame = tf_prefix + "/os1_sensor";
-  auto imu_frame = tf_prefix + "/os1_imu";
-  auto lidar_frame = tf_prefix + "/os1_lidar";
+  if (!tf_prefix.empty()) {
+    if (tf_prefix.back() != '/') tf_prefix.append(1, '/');
+  }
+  auto sensor_frame = tf_prefix + "os1_sensor";
+  auto imu_frame = tf_prefix + "os1_imu";
+  auto lidar_frame = tf_prefix + "os1_lidar";
 
   ouster_ros::OS1ConfigSrv cfg{};
   auto client = nh.serviceClient<ouster_ros::OS1ConfigSrv>("os1_config");
@@ -69,13 +72,12 @@ int main(int argc, char** argv) {
   sensor_msgs::PointCloud2 msg{};
 
   auto batch_and_publish = OS1::batch_to_iter<CloudOS1::iterator>(
-        xyz_lut, W, H, {}, &PointOS1::make,
-        [&](uint64_t scan_ts) mutable {
-            msg = ouster_ros::OS1::cloud_to_cloud_msg(
-                cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
-            if(validTimestamp(msg.header.stamp))
-              lidar_pub.publish(msg);
-        });
+      xyz_lut, W, H, {}, &PointOS1::make,
+      [&](uint64_t scan_ts) mutable {
+        msg = ouster_ros::OS1::cloud_to_cloud_msg(
+            cloud, std::chrono::nanoseconds{scan_ts}, lidar_frame);
+        if (validTimestamp(msg.header.stamp)) lidar_pub.publish(msg);
+      });
 
   auto lidar_handler = [&](const PacketMsg& pm) mutable {
     batch_and_publish(pm.buf.data(), it);

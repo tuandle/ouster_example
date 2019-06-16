@@ -19,25 +19,25 @@ const size_t imu_packet_bytes = 48;
 struct client;
 
 enum client_state {
-    TIMEOUT = 0,
-    ERROR = 1,
-    LIDAR_DATA = 2,
-    IMU_DATA = 4,
-    EXIT = 8
+  TIMEOUT = 0,
+  ERROR = 1,
+  LIDAR_DATA = 2,
+  IMU_DATA = 4,
+  EXIT = 8
 };
 
 enum lidar_mode {
-    MODE_512x10 = 1,
-    MODE_512x20,
-    MODE_1024x10,
-    MODE_1024x20,
-    MODE_2048x10
+  MODE_512x10 = 1,
+  MODE_512x20,
+  MODE_1024x10,
+  MODE_1024x20,
+  MODE_2048x10
 };
 
 struct version {
-    int16_t major;
-    int16_t minor;
-    int16_t patch;
+  int16_t major;
+  int16_t minor;
+  int16_t patch;
 };
 
 const version invalid_version = {0, 0, 0};
@@ -48,28 +48,28 @@ const version invalid_version = {0, 0, 0};
 const OS1::version min_version = {1, 9, 0};
 
 inline bool operator==(const version& u, const version& v) {
-    return u.major == v.major && u.minor == v.minor && u.patch == v.patch;
+  return u.major == v.major && u.minor == v.minor && u.patch == v.patch;
 }
 
 inline bool operator<(const version& u, const version& v) {
-    return (u.major < v.major) || (u.major == v.major && u.minor < v.minor) ||
-           (u.major == v.major && u.minor == v.minor && u.patch < v.patch);
+  return (u.major < v.major) || (u.major == v.major && u.minor < v.minor) ||
+         (u.major == v.major && u.minor == v.minor && u.patch < v.patch);
 }
 
 inline bool operator<=(const version& u, const version& v) {
-    return u < v || u == v;
+  return u < v || u == v;
 }
 
 struct sensor_info {
-    std::string hostname;
-    std::string sn;
-    //std::string timestamp;
-    std::string fw_rev;
-    lidar_mode mode;
-    std::vector<double> beam_azimuth_angles;
-    std::vector<double> beam_altitude_angles;
-    std::vector<double> imu_to_sensor_transform;
-    std::vector<double> lidar_to_sensor_transform;
+  std::string hostname;
+  std::string sn;
+  // std::string timestamp;
+  std::string fw_rev;
+  lidar_mode mode;
+  std::vector<double> beam_azimuth_angles;
+  std::vector<double> beam_altitude_angles;
+  std::vector<double> imu_to_sensor_transform;
+  std::vector<double> lidar_to_sensor_transform;
 };
 
 /**
@@ -107,6 +107,7 @@ lidar_mode lidar_mode_of_string(const std::string& s);
  */
 int n_cols_of_lidar_mode(lidar_mode mode);
 
+std::shared_ptr<client> init_client(int lidar_port = 7502, int imu_port = 7503);
 /**
  * Connect to the sensor and start listening for data
  * @param hostname hostname or ip of the sensor
@@ -127,7 +128,7 @@ std::shared_ptr<client> init_client(const std::string& hostname,
  * LIDAR_DATA) is true if lidar data is ready to read, and (s & IMU_DATA) is
  * true if imu data is ready to read
  */
-client_state poll_client(const client& cli);
+client_state poll_client(const client& cli, int timeout_sec = 1);
 
 /**
  * Read lidar data from the sensor. Will block for up to a second if no data is
